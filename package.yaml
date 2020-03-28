@@ -1,0 +1,75 @@
+name:                trialchain
+version:             0.1.0.0
+github:              "abailly/trialchain"
+license:             BSD3
+author:              "Arnaud Bailly"
+maintainer:          "arnaud.oqube@gmail.com"
+copyright:           "2020 Arnaud Bailly"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+description:         Please see the README on GitHub at <https://github.com/abailly/trialchainr#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+
+library:
+  source-dirs: src
+  dependencies:
+  - aeson
+  - async
+  - base16-bytestring
+  - bytestring
+  - cryptonite
+  - data-default
+  - http-client
+  - memory
+  - servant
+  - servant-server
+  - text
+  - wai-extra
+  - warp
+
+default-extensions:
+- OverloadedStrings
+- DeriveGeneric
+- DeriveAnyClass
+- DataKinds
+- TypeOperators
+- NamedFieldPuns
+
+executables:
+  trialchaind:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - async
+    - trialchain
+
+tests:
+  trialchain-server-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - trialchain
+    - aeson
+    - bytestring
+    - hspec
+    - hspec-discover
+    - hspec-wai
+    - http-client
+    - servant-client
+    - servant-server
+    - text
+    - wai
+    - wai-extra

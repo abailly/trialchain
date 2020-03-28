@@ -1,0 +1,12 @@
+\#*
+.\#*
+#.*
+#*.aux
+*.log
+*.out
+*~
+.stack-work/
+.stack-work-build/
+TAGS
+.stack-work/
+training-server.cabal
