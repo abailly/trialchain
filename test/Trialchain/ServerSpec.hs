@@ -1,20 +1,25 @@
 module Trialchain.ServerSpec where
 
 import Control.Exception (bracket)
+import Data.Text (Text)
 import Network.HTTP.Client (defaultManagerSettings, newManager)
 import Servant
 import Servant.Client
-import Servant.Server
 import Test.Hspec
 import Trialchain.Application
 import Trialchain.Builder
 import Trialchain.Server
 
+startServer :: IO AppServer
 startServer = startAppServer 0
 
+trialchainServer :: (AppServer -> IO c) -> IO c
 trialchainServer = bracket startServer stopServer
 
-(registerAccount :<|> _ )= client api
+registerAccount ::
+  Account
+  -> ClientM (Headers '[Header "Location" Text] NoContent)
+registerAccount :<|> _ = client api
 
 spec :: Spec
 spec =

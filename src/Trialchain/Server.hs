@@ -1,18 +1,10 @@
 module Trialchain.Server where
 
-import Control.Concurrent
 import Control.Concurrent.Async
-import Control.Exception
-import Data.Aeson
 import Data.Default
-import Data.Text
-import GHC.Generics
-import Network.HTTP.Client (defaultManagerSettings, newManager)
 import Network.Wai.Handler.Warp as Warp
 import Network.Wai.Middleware.RequestLogger
 import Network.Wai.Middleware.RequestLogger.JSON
-import Servant
-import Servant.Server
 import Trialchain.Application
 
 data AppServer = AppServer

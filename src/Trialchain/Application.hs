@@ -1,9 +1,7 @@
 module Trialchain.Application where
 
 import Data.Aeson as A
-import Data.ByteString (ByteString)
 import Data.Text (Text)
-import Data.Text.Encoding (encodeUtf8)
 import GHC.Generics
 import Servant
 import Trialchain.Utils

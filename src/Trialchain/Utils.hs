@@ -1,13 +1,12 @@
 module Trialchain.Utils
-  ( Hash, hashValue
-  , PublicKey, publicKey, PrivateKey, privateKey
+  ( Hash(..), PublicKey(..), PrivateKey(..)
   , decodeUtf8', toString, hashOf, (</>)
   , generateKeyPair
   ) where
 
 import Control.Monad.Fail (MonadFail)
 import Crypto.Error (CryptoFailable(..))
-import Crypto.Hash (Digest(..), SHA1, hash)
+import Crypto.Hash (Digest, SHA1, hash)
 import qualified Crypto.PubKey.Ed25519 as Ed25519
 import Crypto.Random.Types (MonadRandom)
 import qualified Data.Aeson as A
@@ -15,7 +14,7 @@ import Data.ByteArray (convert)
 import Data.ByteString (ByteString)
 import Data.ByteString.Base16 (decode, encode)
 import Data.ByteString.Lazy (toStrict)
-import Data.Text (Text, pack, unpack)
+import Data.Text (Text, unpack)
 import Data.Text.Encoding (decodeUtf8With, encodeUtf8)
 import Data.Text.Encoding.Error (lenientDecode)
 
@@ -38,8 +37,8 @@ parseKey extractor ctor string =
   case (decode $ encodeUtf8 string) of
     (bs, "") -> case extractor bs of
                   CryptoPassed k -> pure $ ctor k
-                  CryptoFailed err -> fail $ "cannot decode key from JSON: " <> show string
-    other -> fail $ "cannot decode key from JSON: " <> show string
+                  CryptoFailed _ -> fail $ "cannot decode key from JSON: " <> show string
+    _ -> fail $ "cannot decode key from JSON: " <> show string
 
 -- | A public key
 -- The underlying implementation is opaque, here we use Ed25519 elliptic curve-based

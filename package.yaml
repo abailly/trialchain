@@ -42,6 +42,7 @@ default-extensions:
 - DataKinds
 - TypeOperators
 - NamedFieldPuns
+- ScopedTypeVariables
 
 executables:
   trialchaind:
@@ -71,10 +72,13 @@ tests:
     - trialchain
     - aeson
     - bytestring
+    - cryptonite
     - hspec
     - hspec-discover
+    - hspec-golden-aeson
     - hspec-wai
     - http-client
+    - QuickCheck
     - servant-client
     - servant-server
     - text

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: cf8f4f0ace48b4244cf51da1a77db9ade5714111d375680698db42ef69645c9e
+-- hash: 988c592ceaae3524bf96f8404d34757ea3b4f32c7d00669a31f30e165860184a
 
 name:           trialchain
 version:        0.1.0.0
@@ -34,7 +34,7 @@ library
       Paths_trialchain
   hs-source-dirs:
       src
-  default-extensions: OverloadedStrings DeriveGeneric DeriveAnyClass DataKinds TypeOperators NamedFieldPuns
+  default-extensions: OverloadedStrings DeriveGeneric DeriveAnyClass DataKinds TypeOperators NamedFieldPuns ScopedTypeVariables
   ghc-options: -Wall -Werror
   build-depends:
       aeson
@@ -59,7 +59,7 @@ executable trialchaind
       Paths_trialchain
   hs-source-dirs:
       app
-  default-extensions: OverloadedStrings DeriveGeneric DeriveAnyClass DataKinds TypeOperators NamedFieldPuns
+  default-extensions: OverloadedStrings DeriveGeneric DeriveAnyClass DataKinds TypeOperators NamedFieldPuns ScopedTypeVariables
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -Werror
   build-depends:
       async
@@ -74,17 +74,21 @@ test-suite trialchain-server-test
       Trialchain.AccountSpec
       Trialchain.Builder
       Trialchain.ServerSpec
+      Trialchain.UtilsSpec
       Paths_trialchain
   hs-source-dirs:
       test
-  default-extensions: OverloadedStrings DeriveGeneric DeriveAnyClass DataKinds TypeOperators NamedFieldPuns
+  default-extensions: OverloadedStrings DeriveGeneric DeriveAnyClass DataKinds TypeOperators NamedFieldPuns ScopedTypeVariables
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -Werror
   build-depends:
-      aeson
+      QuickCheck
+    , aeson
     , base >=4.7 && <5
     , bytestring
+    , cryptonite
     , hspec
     , hspec-discover
+    , hspec-golden-aeson
     , hspec-wai
     , http-client
     , servant-client

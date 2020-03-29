@@ -3,16 +3,12 @@ module Trialchain.AccountSpec where
 import qualified Data.Aeson as A
 import Data.ByteString (ByteString)
 import Data.Functor (void)
-import Data.Text (Text, unpack)
 import Data.Text.Encoding (encodeUtf8)
-import GHC.Generics
-import Network.Wai (Application)
 import Network.Wai.Test (SResponse)
 import Test.Hspec as H
 import Test.Hspec.Wai as W
 import Trialchain.Application
 import Trialchain.Builder
-import Trialchain.Utils
 
 spec :: Spec
 spec =
@@ -33,7 +29,8 @@ spec =
       register anAccount
       postJSON "/accounts" anAccount `shouldRespondWith` 409
 
-register = postJSON "/accounts"
+register :: Account -> WaiSession ()
+register = void <$> postJSON "/accounts"
 
   -- it "on GET /accounts returns list of registered accounts" $ do
   --   register anAccount
