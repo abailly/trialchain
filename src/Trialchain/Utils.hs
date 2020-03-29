@@ -28,6 +28,13 @@ instance A.ToJSON Hash where
 instance A.FromJSON Hash where
   parseJSON = A.withText "Hash" $ \ s -> pure $ Hash (encodeUtf8 s)
 
+parseKey extractor ctor string =
+  case (decode $ encodeUtf8 string) of
+    (bs, "") -> case extractor bs of
+                  CryptoPassed k -> pure $ ctor k
+                  CryptoFailed err -> fail $ "cannot decode key from JSON: " <> show string
+    other -> fail $ "cannot decode key from JSON: " <> show string
+
 -- | A public key
 -- The underlying implementation is opaque, here we use Ed25519 elliptic curve-based
 -- key pairs
@@ -38,12 +45,7 @@ instance A.ToJSON PublicKey where
   toJSON (PublicKey key) = A.String $ decodeUtf8' $ encode $ convert key
 
 instance A.FromJSON PublicKey where
-  parseJSON = A.withText "PublicKey" $
-              \ s -> case (decode $ encodeUtf8 s) of
-                        (bs, "") -> case Ed25519.publicKey bs of
-                                      CryptoPassed k -> pure $ PublicKey k
-                                      CryptoFailed err -> fail $ "cannot decode public key from JSON: " <> show s
-                        other -> fail $ "cannot decode public key from JSON: " <> show s
+  parseJSON = A.withText "PublicKey" $ parseKey Ed25519.publicKey PublicKey
 
 newtype PrivateKey = PrivateKey { privateKey :: Ed25519.SecretKey }
   deriving (Eq, Show)
@@ -52,12 +54,7 @@ instance A.ToJSON PrivateKey where
   toJSON (PrivateKey key) = A.String $ decodeUtf8' $ encode $ convert key
 
 instance A.FromJSON PrivateKey where
-  parseJSON = A.withText "PrivateKey" $
-              \ s ->  case (decode $ encodeUtf8 s) of
-                        (bs, "") -> case Ed25519.secretKey bs of
-                                      CryptoPassed k -> pure $ PrivateKey k
-                                      CryptoFailed err -> fail $ "cannot decode private key from JSON: " <> show s
-                        other -> fail $ "cannot decode private key from JSON: " <> show s
+  parseJSON = A.withText "PrivateKey" $ parseKey Ed25519.secretKey PrivateKey
 
 generateKeyPair :: (MonadRandom m) => m (PublicKey, PrivateKey)
 generateKeyPair = do
