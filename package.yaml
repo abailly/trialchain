@@ -31,6 +31,9 @@ library:
   - text
   - wai-extra
   - warp
+  ghc-options:
+  - -Wall
+  - -Werror
 
 default-extensions:
 - OverloadedStrings
@@ -48,6 +51,8 @@ executables:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    - -Wall
+    - -Werror
     dependencies:
     - async
     - trialchain
@@ -60,6 +65,8 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    - -Wall
+    - -Werror
     dependencies:
     - trialchain
     - aeson

@@ -5,6 +5,7 @@ module Trialchain.Utils
   , generateKeyPair
   ) where
 
+import Control.Monad.Fail (MonadFail)
 import Crypto.Error (CryptoFailable(..))
 import Crypto.Hash (Digest(..), SHA1, hash)
 import qualified Crypto.PubKey.Ed25519 as Ed25519
@@ -28,6 +29,11 @@ instance A.ToJSON Hash where
 instance A.FromJSON Hash where
   parseJSON = A.withText "Hash" $ \ s -> pure $ Hash (encodeUtf8 s)
 
+
+-- | Parse a cryptographic key from a hex-encoded `Text`
+parseKey ::
+  MonadFail m =>
+  (ByteString -> CryptoFailable t) -> (t -> a) -> Text -> m a
 parseKey extractor ctor string =
   case (decode $ encodeUtf8 string) of
     (bs, "") -> case extractor bs of
