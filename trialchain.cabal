@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: db22850c8e21491d5c0f9c89902805903169263e798d47c2680d9c1f241a1840
+-- hash: f65a618d6baffaf526c5add55191bf8cf7be73dd9128dfa29e78ee9f5a638ebc
 
 name:           trialchain
 version:        0.1.0.0
@@ -70,7 +70,8 @@ test-suite trialchain-server-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Trialchain.RegistrationSpec
+      Trialchain.AccountSpec
+      Trialchain.Builder
       Trialchain.ServerSpec
       Paths_trialchain
   hs-source-dirs:
