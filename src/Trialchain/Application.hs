@@ -1,24 +1,14 @@
 module Trialchain.Application where
 
-import Data.Aeson as A
 import Data.Text (Text)
-import GHC.Generics
 import Servant
+import Trialchain.Identity
 import Trialchain.Utils
 
-data Account =
-  Account { accountId :: Hash
-          , key :: PublicKey
-          }
-  deriving (Eq, Show, Generic, A.ToJSON, A.FromJSON)
-
-accountHash :: Account -> Text
-accountHash (Account h _) = decodeUtf8' $ hashValue h
-
 type API =
-  "accounts" :> ( ReqBody '[ JSON] Account :> PostCreated '[ JSON] (Headers '[Header "Location" Text] NoContent)
-                  :<|> Get '[ JSON] [Account]
-                )
+  "identities" :> ( ReqBody '[ JSON] Identity :> PostCreated '[ JSON] (Headers '[Header "Location" Text] NoContent)
+                    :<|> Get '[ JSON] [Identity]
+                  )
 
 api :: Proxy API
 api = Proxy
@@ -26,6 +16,6 @@ api = Proxy
 trialchainApp :: Application
 trialchainApp = serve api handlers
   where
-    handlers = registerAccount :<|> listAccounts
-    registerAccount account = pure $ addHeader ("/accounts" </> accountHash account) NoContent
-    listAccounts = pure [ ]
+    handlers = registerIdentity :<|> listIdentities
+    registerIdentity identity = pure $ addHeader ("/identities" </> identityHash identity) NoContent
+    listIdentities = pure [ ]

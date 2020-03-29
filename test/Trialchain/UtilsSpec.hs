@@ -6,11 +6,12 @@ import Data.Text (pack)
 import Test.Aeson.GenericSpecs
 import Test.Hspec
 import Test.QuickCheck
-import Trialchain.Application
+
+import Trialchain.Identity
 import Trialchain.Utils
 
-instance Arbitrary Account where
-  arbitrary = Account <$> arbitrary <*> arbitrary
+instance Arbitrary Identity where
+  arbitrary = Identity <$> arbitrary <*> arbitrary
 
 genKeyPair :: Gen (PublicKey, PrivateKey)
 genKeyPair = do
@@ -31,4 +32,4 @@ spec = describe "Crypto utilities" $ do
   roundtripAndGoldenSpecs (Proxy :: Proxy Hash)
   roundtripAndGoldenSpecs (Proxy :: Proxy PublicKey)
   roundtripAndGoldenSpecs (Proxy :: Proxy PrivateKey)
-  roundtripAndGoldenSpecs (Proxy :: Proxy Account)
+  roundtripAndGoldenSpecs (Proxy :: Proxy Identity)

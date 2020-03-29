@@ -6,8 +6,10 @@ import Network.HTTP.Client (defaultManagerSettings, newManager)
 import Servant
 import Servant.Client
 import Test.Hspec
+
 import Trialchain.Application
 import Trialchain.Builder
+import Trialchain.Identity
 import Trialchain.Server
 
 startServer :: IO AppServer
@@ -16,10 +18,10 @@ startServer = startAppServer 0
 trialchainServer :: (AppServer -> IO c) -> IO c
 trialchainServer = bracket startServer stopServer
 
-registerAccount ::
-  Account
+registerIdentity ::
+  Identity
   -> ClientM (Headers '[Header "Location" Text] NoContent)
-registerAccount :<|> _ = client api
+registerIdentity :<|> _ = client api
 
 spec :: Spec
 spec =
@@ -29,6 +31,6 @@ spec =
 
      env <- ClientEnv <$> newManager defaultManagerSettings <*> pure (BaseUrl Http "localhost" serverPort "") <*> pure Nothing
 
-     result <- runClientM (registerAccount anAccount) env
+     result <- runClientM (registerIdentity anIdentity) env
 
      getResponse <$> result `shouldBe` Right NoContent

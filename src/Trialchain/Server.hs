@@ -6,6 +6,7 @@ import Network.Wai.Handler.Warp as Warp
 import Network.Wai.Middleware.RequestLogger
 import Network.Wai.Middleware.RequestLogger.JSON
 import Trialchain.Application
+import Trialchain.State
 
 data AppServer = AppServer
     { serverThread :: Maybe (Async ())
@@ -14,7 +15,8 @@ data AppServer = AppServer
 
 startAppServer :: Port -> IO AppServer
 startAppServer listenPort = do
-  logger <- doLog
+  logger             <- doLog
+  _state              <- initialState
   (realPort, thread) <- server logger
   pure $ AppServer (Just thread) realPort
     where

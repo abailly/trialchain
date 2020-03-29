@@ -22,6 +22,7 @@ library:
   - async
   - base16-bytestring
   - bytestring
+  - containers
   - cryptonite
   - data-default
   - http-client
