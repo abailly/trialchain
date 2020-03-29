@@ -3,6 +3,7 @@ module Trialchain.Builder where
 
 import qualified Data.Aeson as A
 import Data.ByteString (ByteString)
+import Data.Text (Text)
 import Network.Wai (Application)
 import Network.Wai.Test (SResponse)
 import System.IO.Unsafe
@@ -19,7 +20,7 @@ aSecretKey = unsafePerformIO generateKeyPair
 {-# NOINLINE aSecretKey #-}
 
 anIdentity :: Identity
-anIdentity = Identity { identityId = hashOf "alice", key = fst aSecretKey }
+anIdentity = Identity { identityId = hashOf @Text  "alice", key = fst aSecretKey }
 
 alice :: Identity
 alice = anIdentity
@@ -29,7 +30,7 @@ bobsKeys = unsafePerformIO generateKeyPair
 {-# NOINLINE bobsKeys #-}
 
 bob :: Identity
-bob = Identity { identityId = hashOf "bob", key = fst bobsKeys }
+bob = Identity { identityId = hashOf @Text "bob", key = fst bobsKeys }
 
 aValidTransaction :: Transaction
 aValidTransaction =
@@ -38,8 +39,8 @@ aValidTransaction =
     tx = Transaction { payload = payload
                      , previous = baseTransactionHash
                      , signed = NotSigned }
-    payload = Payload { from = hashOf "alice"
-                      , to = hashOf "bob"
+    payload = Payload { from = hashOf @Text "alice"
+                      , to = hashOf @Text "bob"
                       , amount = 1
                       }
 

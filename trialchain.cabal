@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0be702cfbd8f20491194f1c36a78653fe1b4a59ca5d42eee7e79adc90769fa3c
+-- hash: 606de9a1e529688a2455c8bb273c80a109965846b388cbe71710462ae43c2d76
 
 name:           trialchain
 version:        0.1.0.0
@@ -37,7 +37,7 @@ library
       Paths_trialchain
   hs-source-dirs:
       src
-  default-extensions: OverloadedStrings DeriveGeneric DeriveAnyClass DataKinds TypeOperators NamedFieldPuns ScopedTypeVariables FlexibleContexts RecordWildCards
+  default-extensions: OverloadedStrings DeriveGeneric DeriveAnyClass DataKinds TypeOperators NamedFieldPuns ScopedTypeVariables FlexibleContexts RecordWildCards TypeApplications
   ghc-options: -Wall -Werror
   build-depends:
       aeson
@@ -65,7 +65,7 @@ executable trialchaind
       Paths_trialchain
   hs-source-dirs:
       app
-  default-extensions: OverloadedStrings DeriveGeneric DeriveAnyClass DataKinds TypeOperators NamedFieldPuns ScopedTypeVariables FlexibleContexts RecordWildCards
+  default-extensions: OverloadedStrings DeriveGeneric DeriveAnyClass DataKinds TypeOperators NamedFieldPuns ScopedTypeVariables FlexibleContexts RecordWildCards TypeApplications
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -Werror
   build-depends:
       async
@@ -85,7 +85,7 @@ test-suite trialchain-server-test
       Paths_trialchain
   hs-source-dirs:
       test
-  default-extensions: OverloadedStrings DeriveGeneric DeriveAnyClass DataKinds TypeOperators NamedFieldPuns ScopedTypeVariables FlexibleContexts RecordWildCards
+  default-extensions: OverloadedStrings DeriveGeneric DeriveAnyClass DataKinds TypeOperators NamedFieldPuns ScopedTypeVariables FlexibleContexts RecordWildCards TypeApplications
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -Werror
   build-depends:
       QuickCheck

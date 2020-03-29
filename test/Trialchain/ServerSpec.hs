@@ -21,7 +21,7 @@ trialchainServer = bracket startServer stopServer
 registerIdentity ::
   Identity
   -> ClientM (Headers '[Header "Location" Text] NoContent)
-registerIdentity :<|> _ = client api
+(registerIdentity :<|> _) :<|> _  = client api
 
 spec :: Spec
 spec =

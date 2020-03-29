@@ -1,13 +1,15 @@
 module Trialchain.Utils
   ( Hash(..), fromText, toText
   , PublicKey(..), PrivateKey(..), Signature(..)
-  , decodeUtf8', hashOf, (</>)
+  , Hashable(..)
+  , decodeUtf8', (</>), hash
   , generateKeyPair
   ) where
 
 import Control.Monad.Fail (MonadFail)
 import Crypto.Error (CryptoFailable(..))
-import Crypto.Hash (Digest, SHA1, digestFromByteString, hash)
+import Crypto.Hash (Digest, SHA1, digestFromByteString)
+import qualified Crypto.Hash as H
 import qualified Crypto.PubKey.Ed25519 as Ed25519
 import Crypto.Random.Types (MonadRandom)
 import qualified Data.Aeson as A
@@ -43,6 +45,10 @@ fromText s = case decode (encodeUtf8 s) of
 
 toText :: Hash -> Text
 toText = decodeUtf8' . convert . hashValue
+
+-- | A class for things that we can compute a `Hash` from
+class Hashable h where
+  hashOf :: h -> Hash
 
 -- | Parse a cryptographic key from a hex-encoded `Text`
 parseKey ::
@@ -94,18 +100,24 @@ instance A.ToJSON Signature where
   toJSON NotSigned = A.String ""
   toJSON Signature{signature} = A.String $ decodeUtf8' $ encode $ convert signature
 
+instance A.FromJSON Signature where
+  parseJSON = A.withText "Signature" $
+              \ s -> if s == ""
+                     then pure NotSigned
+                     else parseKey Ed25519.signature Signature s
+
 -- | Decode a `ByteString` into a `Text` assuming UTF-8 encoding.
 -- If unknown bytes sequence are encountered they are replaced by a default
 -- character.
 decodeUtf8' :: ByteString -> Text
 decodeUtf8' = decodeUtf8With lenientDecode
 
--- | Returns an hexadecimal encoding of the SHA1 of given bytes
-hashOf :: Text -> Hash
-hashOf = Hash . h . encodeUtf8
-  where
-    h :: ByteString -> Digest SHA1
-    h = hash
+instance Hashable Text where
+  -- | Returns an hexadecimal encoding of the SHA1 of given bytes
+  hashOf = hash . encodeUtf8
+
+hash :: ByteString -> Hash
+hash = Hash . H.hash
 
 -- | Helper to build URIs
 (</>) :: Text -> Text -> Text
