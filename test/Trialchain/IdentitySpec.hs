@@ -4,6 +4,7 @@ import qualified Data.Aeson as A
 import Data.ByteString (ByteString)
 import Data.Functor (void)
 import Data.Text.Encoding (encodeUtf8)
+import Network.Wai (Application)
 import Network.Wai.Test (SResponse)
 import Test.Hspec as H
 import Test.Hspec.Wai as W
@@ -11,10 +12,14 @@ import Test.Hspec.Wai as W
 import Trialchain.Application
 import Trialchain.Builder
 import Trialchain.Identity
+import Trialchain.State
+
+mkTrialchainApp :: IO Application
+mkTrialchainApp = initialState >>= pure . trialchainApp
 
 spec :: Spec
 spec =
-  with (pure trialchainApp) $
+  with mkTrialchainApp $
   describe "Identities registration" $ do
 
   describe "Given Identity is not registered" $ do

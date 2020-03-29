@@ -20,7 +20,7 @@ import Data.Text.Encoding.Error (lenientDecode)
 
 -- | A SHA1 hash of some value
 newtype Hash = Hash { hashValue :: ByteString }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Ord)
 
 instance A.ToJSON Hash where
   toJSON (Hash h) = A.String $ decodeUtf8' h

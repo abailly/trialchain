@@ -27,8 +27,10 @@ library:
   - data-default
   - http-client
   - memory
+  - mtl
   - servant
   - servant-server
+  - stm
   - text
   - wai-extra
   - warp
@@ -44,6 +46,8 @@ default-extensions:
 - TypeOperators
 - NamedFieldPuns
 - ScopedTypeVariables
+- FlexibleContexts
+- RecordWildCards
 
 executables:
   trialchaind:

@@ -26,9 +26,8 @@ registerIdentity :<|> _ = client api
 spec :: Spec
 spec =
   around trialchainServer $
-  describe "Trainees registration" $
-  it "answers to trainee registration query" $ \ AppServer{serverPort} -> do
-
+  describe "Identities API" $
+  it "answers to identities query" $ \ AppServer{serverPort} -> do
      env <- ClientEnv <$> newManager defaultManagerSettings <*> pure (BaseUrl Http "localhost" serverPort "") <*> pure Nothing
 
      result <- runClientM (registerIdentity anIdentity) env

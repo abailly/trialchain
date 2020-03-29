@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 97fd8e96f5e016f4ec4a928ecf56dc2c629a43f8506e9617ade2e54e34da7088
+-- hash: 7e0fcf2a329c62cfc3691021c2d4385aa2076225d1033b77ba04dd2a3b416d7e
 
 name:           trialchain
 version:        0.1.0.0
@@ -36,7 +36,7 @@ library
       Paths_trialchain
   hs-source-dirs:
       src
-  default-extensions: OverloadedStrings DeriveGeneric DeriveAnyClass DataKinds TypeOperators NamedFieldPuns ScopedTypeVariables
+  default-extensions: OverloadedStrings DeriveGeneric DeriveAnyClass DataKinds TypeOperators NamedFieldPuns ScopedTypeVariables FlexibleContexts RecordWildCards
   ghc-options: -Wall -Werror
   build-depends:
       aeson
@@ -49,8 +49,10 @@ library
     , data-default
     , http-client
     , memory
+    , mtl
     , servant
     , servant-server
+    , stm
     , text
     , wai-extra
     , warp
@@ -62,7 +64,7 @@ executable trialchaind
       Paths_trialchain
   hs-source-dirs:
       app
-  default-extensions: OverloadedStrings DeriveGeneric DeriveAnyClass DataKinds TypeOperators NamedFieldPuns ScopedTypeVariables
+  default-extensions: OverloadedStrings DeriveGeneric DeriveAnyClass DataKinds TypeOperators NamedFieldPuns ScopedTypeVariables FlexibleContexts RecordWildCards
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -Werror
   build-depends:
       async
@@ -81,7 +83,7 @@ test-suite trialchain-server-test
       Paths_trialchain
   hs-source-dirs:
       test
-  default-extensions: OverloadedStrings DeriveGeneric DeriveAnyClass DataKinds TypeOperators NamedFieldPuns ScopedTypeVariables
+  default-extensions: OverloadedStrings DeriveGeneric DeriveAnyClass DataKinds TypeOperators NamedFieldPuns ScopedTypeVariables FlexibleContexts RecordWildCards
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -Werror
   build-depends:
       QuickCheck
