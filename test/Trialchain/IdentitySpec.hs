@@ -8,6 +8,7 @@ import Network.Wai (Application)
 import Network.Wai.Test (SResponse)
 import Test.Hspec as H
 import Test.Hspec.Wai as W
+import Test.Hspec.Wai.Matcher as W
 
 import Trialchain.Application
 import Trialchain.Builder
@@ -35,6 +36,11 @@ spec =
     it "on POST /identities returns 409" $ do
       register anIdentity
       postJSON "/identities" anIdentity `shouldRespondWith` 409
+
+    it "on GET /identities returns list of identities" $ do
+      register anIdentity
+      get "/identities" `shouldRespondWith` ResponseMatcher 200 [] (W.bodyEquals $ A.encode [anIdentity])
+
 
 register :: Identity -> WaiSession ()
 register = void <$> postJSON "/identities"
