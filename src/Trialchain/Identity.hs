@@ -15,4 +15,4 @@ data Identity =
   deriving (Eq, Show, Generic, A.ToJSON, A.FromJSON)
 
 identityHash :: Identity -> Text
-identityHash (Identity h _) = decodeUtf8' $ hashValue h
+identityHash (Identity h _) = toText h

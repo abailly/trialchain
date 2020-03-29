@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7e0fcf2a329c62cfc3691021c2d4385aa2076225d1033b77ba04dd2a3b416d7e
+-- hash: 0be702cfbd8f20491194f1c36a78653fe1b4a59ca5d42eee7e79adc90769fa3c
 
 name:           trialchain
 version:        0.1.0.0
@@ -31,6 +31,7 @@ library
       Trialchain.Identity
       Trialchain.Server
       Trialchain.State
+      Trialchain.Transaction
       Trialchain.Utils
   other-modules:
       Paths_trialchain
@@ -79,6 +80,7 @@ test-suite trialchain-server-test
       Trialchain.Builder
       Trialchain.IdentitySpec
       Trialchain.ServerSpec
+      Trialchain.TransactionSpec
       Trialchain.UtilsSpec
       Paths_trialchain
   hs-source-dirs:

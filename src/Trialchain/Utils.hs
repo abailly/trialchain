@@ -1,33 +1,48 @@
 module Trialchain.Utils
-  ( Hash(..), PublicKey(..), PrivateKey(..)
-  , decodeUtf8', toString, hashOf, (</>)
+  ( Hash(..), fromText, toText
+  , PublicKey(..), PrivateKey(..), Signature(..)
+  , decodeUtf8', hashOf, (</>)
   , generateKeyPair
   ) where
 
 import Control.Monad.Fail (MonadFail)
 import Crypto.Error (CryptoFailable(..))
-import Crypto.Hash (Digest, SHA1, hash)
+import Crypto.Hash (Digest, SHA1, digestFromByteString, hash)
 import qualified Crypto.PubKey.Ed25519 as Ed25519
 import Crypto.Random.Types (MonadRandom)
 import qualified Data.Aeson as A
 import Data.ByteArray (convert)
 import Data.ByteString (ByteString)
 import Data.ByteString.Base16 (decode, encode)
-import Data.ByteString.Lazy (toStrict)
-import Data.Text (Text, unpack)
+import Data.Maybe (fromMaybe)
+import Data.String
+import Data.Text (Text, pack)
 import Data.Text.Encoding (decodeUtf8With, encodeUtf8)
 import Data.Text.Encoding.Error (lenientDecode)
 
 -- | A SHA1 hash of some value
-newtype Hash = Hash { hashValue :: ByteString }
+newtype Hash = Hash { hashValue :: Digest SHA1 }
   deriving (Eq, Show, Ord)
 
+instance IsString Hash where
+  fromString = fromMaybe (error "invalid Hash string") . fromText . pack
+
 instance A.ToJSON Hash where
-  toJSON (Hash h) = A.String $ decodeUtf8' h
+  toJSON (Hash h) = A.String $ decodeUtf8' $ encode $ convert h
 
 instance A.FromJSON Hash where
-  parseJSON = A.withText "Hash" $ \ s -> pure $ Hash (encodeUtf8 s)
+  parseJSON = A.withText "Hash" fromText
 
+fromText ::
+  MonadFail m => Text -> m Hash
+fromText s = case decode (encodeUtf8 s) of
+               (bs,"") -> case digestFromByteString bs of
+                            Nothing -> fail $ "cannot decode hash from JSON: " <> show s
+                            Just h -> pure $ Hash h
+               _ -> fail $ "cannot decode hash from JSON: " <> show s
+
+toText :: Hash -> Text
+toText = decodeUtf8' . convert . hashValue
 
 -- | Parse a cryptographic key from a hex-encoded `Text`
 parseKey ::
@@ -52,6 +67,11 @@ instance A.ToJSON PublicKey where
 instance A.FromJSON PublicKey where
   parseJSON = A.withText "PublicKey" $ parseKey Ed25519.publicKey PublicKey
 
+-- | A private key
+-- Underlying implementation should be opaque but here we use explicitly Ed25519
+-- elliptic curve key.
+-- This is mostly used to generate key pairs in order to get valid public keys
+-- and signatures.
 newtype PrivateKey = PrivateKey { privateKey :: Ed25519.SecretKey }
   deriving (Eq, Show)
 
@@ -66,19 +86,23 @@ generateKeyPair = do
   secret <- Ed25519.generateSecretKey
   pure (PublicKey (Ed25519.toPublic secret), PrivateKey secret)
 
+data Signature = NotSigned
+               | Signature { signature :: Ed25519.Signature }
+  deriving (Eq, Show)
+
+instance A.ToJSON Signature where
+  toJSON NotSigned = A.String ""
+  toJSON Signature{signature} = A.String $ decodeUtf8' $ encode $ convert signature
+
 -- | Decode a `ByteString` into a `Text` assuming UTF-8 encoding.
 -- If unknown bytes sequence are encountered they are replaced by a default
 -- character.
 decodeUtf8' :: ByteString -> Text
 decodeUtf8' = decodeUtf8With lenientDecode
 
--- | Provide a `String` representation of given JSONable value.
-toString :: (A.ToJSON a) => a -> String
-toString = unpack . decodeUtf8' . toStrict . A.encode
-
 -- | Returns an hexadecimal encoding of the SHA1 of given bytes
 hashOf :: Text -> Hash
-hashOf = Hash . convert . h . encodeUtf8
+hashOf = Hash . h . encodeUtf8
   where
     h :: ByteString -> Digest SHA1
     h = hash

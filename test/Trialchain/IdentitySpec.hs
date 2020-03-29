@@ -1,22 +1,14 @@
 module Trialchain.IdentitySpec where
 
 import qualified Data.Aeson as A
-import Data.ByteString (ByteString)
 import Data.Functor (void)
 import Data.Text.Encoding (encodeUtf8)
-import Network.Wai (Application)
-import Network.Wai.Test (SResponse)
 import Test.Hspec as H
 import Test.Hspec.Wai as W
 import Test.Hspec.Wai.Matcher as W
 
-import Trialchain.Application
 import Trialchain.Builder
 import Trialchain.Identity
-import Trialchain.State
-
-mkTrialchainApp :: IO Application
-mkTrialchainApp = initialState >>= pure . trialchainApp
 
 spec :: Spec
 spec =
@@ -44,10 +36,3 @@ spec =
 
 register :: Identity -> WaiSession ()
 register = void <$> postJSON "/identities"
-
-  -- it "on GET /identities returns list of registered identities" $ do
-  --   register anIdentity
-  --   get "/identities" `shouldRespondWith` (toString [anIdentity])
-
-postJSON :: (A.ToJSON a) => ByteString -> a -> WaiSession SResponse
-postJSON path payload = request "POST" path [("Content-type", "application/json")] (A.encode payload)
