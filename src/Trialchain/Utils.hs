@@ -3,7 +3,7 @@ module Trialchain.Utils
   , PublicKey(..), PrivateKey(..), Signature(..)
   , Hashable(..)
   , decodeUtf8', (</>), hash
-  , generateKeyPair
+  , generateKeyPair, signWith
   ) where
 
 import Control.Monad.Fail (MonadFail)
@@ -34,6 +34,10 @@ instance A.ToJSON Hash where
 
 instance A.FromJSON Hash where
   parseJSON = A.withText "Hash" fromText
+
+instance Semigroup Hash where
+  Hash{hashValue} <> Hash{hashValue=hashValue'} =
+    hash (convert hashValue <> convert hashValue')
 
 fromText ::
   MonadFail m => Text -> m Hash
@@ -105,6 +109,11 @@ instance A.FromJSON Signature where
               \ s -> if s == ""
                      then pure NotSigned
                      else parseKey Ed25519.signature Signature s
+
+signWith ::
+  PrivateKey -> PublicKey -> Hash -> Signature
+signWith PrivateKey{privateKey} PublicKey{publicKey} Hash{hashValue} =
+  Signature $ Ed25519.sign privateKey publicKey hashValue
 
 -- | Decode a `ByteString` into a `Text` assuming UTF-8 encoding.
 -- If unknown bytes sequence are encountered they are replaced by a default

@@ -34,8 +34,9 @@ bob = Identity { identityId = hashOf @Text "bob", key = fst bobsKeys }
 
 aValidTransaction :: Transaction
 aValidTransaction =
-  signTransaction tx
+  signTransaction priv pub tx
   where
+    (pub, priv) = aSecretKey
     tx = Transaction { payload = payload
                      , previous = baseTransactionHash
                      , signed = NotSigned }
@@ -43,6 +44,9 @@ aValidTransaction =
                       , to = hashOf @Text "bob"
                       , amount = 1
                       }
+
+unsigned :: Transaction -> Transaction
+unsigned tx = tx { signed = NotSigned }
 
 mkTrialchainApp :: IO Application
 mkTrialchainApp = initialState >>= pure . trialchainApp

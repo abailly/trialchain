@@ -12,6 +12,7 @@ import Control.Monad.Trans (MonadIO(..))
 import qualified Data.Map as Map
 import Data.Text (Text)
 import Trialchain.Identity
+import Trialchain.Transaction
 import Trialchain.Utils
 
 data Account = Account { identity :: Identity }
@@ -20,6 +21,8 @@ data Chain = Chain { accounts :: Map.Map Hash Account }
 
 data Event = IdentityRegistered { link :: Text }
            | DuplicateIdentity
+           | TransactionRegistered { link :: Text }
+           | TransactionUnsigned
 
 type ChainState = TVar Chain
 
@@ -48,3 +51,10 @@ registerIdentity identity@Identity{..} = do
 -- | List all identities known by this `Chain` server
 listIdentities :: State Chain [Identity]
 listIdentities = gets (fmap identity . Map.elems . accounts)
+
+
+-- | Try to register a `Transaction`
+-- This function checks the transaction is valid w.r.t. to current state of the ledger
+registerTransaction :: Transaction -> State Chain Event
+registerTransaction Transaction{signed = NotSigned }  = pure TransactionUnsigned
+registerTransaction Transaction{payload} = pure $ TransactionRegistered $ toText $ hashOf payload

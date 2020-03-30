@@ -45,8 +45,9 @@ instance A.FromJSON Transaction where
                      o .: "signed"
 
 
-signTransaction :: Transaction -> Transaction
-signTransaction t = t
+signTransaction :: PrivateKey -> PublicKey -> Transaction -> Transaction
+signTransaction privateKey publicKey tx@Transaction{..} =
+  tx { signed = signWith privateKey publicKey (hashOf payload <> previous) }
 
 -- | The root transaction's hash
 baseTransactionHash :: Hash

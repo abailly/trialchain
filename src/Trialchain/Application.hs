@@ -26,9 +26,13 @@ trialchainApp state = serve api handlers
       case result of
         IdentityRegistered h -> pure $ addHeader ("/identities" </> h) NoContent
         DuplicateIdentity -> throwError err409
+        _ -> throwError err500
 
     listIdentitiesH = withState state listIdentities
 
-    postTransactionH Transaction{payload} = pure $ addHeader ("/identities" </> h) NoContent
-      where
-        h = toText $ hashOf payload
+    postTransactionH tx = do
+      result <- withState state (registerTransaction tx)
+      case result of
+        TransactionRegistered h -> pure $ addHeader ("/identities" </> h) NoContent
+        TransactionUnsigned -> throwError err400
+        _ -> throwError err500
