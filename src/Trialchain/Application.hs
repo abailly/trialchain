@@ -44,5 +44,5 @@ trialchainApp state = serve api handlers
     getTransactionH h = do
       maybeTx <- withState state $ getTransaction h
       case maybeTx of
-        Nothing -> undefined
+        Nothing -> throwError err404
         Just tx -> pure tx

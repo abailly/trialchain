@@ -37,3 +37,6 @@ spec =
       let uri = encodeUtf8 $ "/transactions/" <> toText (hashOf $ payload aValidTransaction)
 
       get uri `shouldRespondWith` 200
+
+    it "on GET /transactions/<tx hash> return 404 given tx hash is not known" $ do
+      get "/transactions/0123456789012345678901234567890123456789" `shouldRespondWith` 404
