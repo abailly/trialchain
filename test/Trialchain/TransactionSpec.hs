@@ -23,3 +23,6 @@ spec =
       let (pub, priv) = bobsKeys
       register anIdentity
       postJSON "/transactions" (signTransaction priv pub aValidTransaction) `shouldRespondWith` 400
+
+    it "on POST /transactions return '400' given transaction signed by unknown issuer" $ do
+      postJSON "/transactions" aValidTransaction `shouldRespondWith` 400

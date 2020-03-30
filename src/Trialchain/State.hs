@@ -10,7 +10,6 @@ import Control.Concurrent.STM
 import Control.Monad.State
 import Control.Monad.Trans (MonadIO(..))
 import qualified Data.Map as Map
-import Data.Maybe (fromJust)
 import Data.Text (Text)
 import Trialchain.Identity
 import Trialchain.Transaction
@@ -25,6 +24,7 @@ data Event = IdentityRegistered { link :: Text }
            | TransactionRegistered { link :: Text }
            | TransactionUnsigned
            | InvalidSignature
+           | UnknownIdentity { idenHash :: Hash }
 
 type ChainState = TVar Chain
 
@@ -54,16 +54,19 @@ registerIdentity identity@Identity{..} = do
 listIdentities :: State Chain [Identity]
 listIdentities = gets (fmap identity . Map.elems . accounts)
 
-findAccount :: Hash -> State Chain Account
-findAccount h = fromJust . Map.lookup h <$> gets accounts
+findAccount :: Hash -> State Chain (Maybe Account)
+findAccount h = Map.lookup h <$> gets accounts
 
 -- | Try to register a `Transaction`
 -- This function checks the transaction is valid w.r.t. to current state of the ledger
 registerTransaction :: Transaction -> State Chain Event
 registerTransaction Transaction{signed = NotSigned }  = pure TransactionUnsigned
 registerTransaction Transaction{payload, previous, signed} = do
-  Account Identity{key} <- findAccount (from payload)
-  let txHash = hashOf payload
-  if verifySignature key (txHash <> previous) signed
-    then  pure $ TransactionRegistered $ toText $ txHash
-    else pure $ InvalidSignature
+  account <- findAccount (from payload)
+  case account of
+    Nothing -> pure $ UnknownIdentity (from payload)
+    Just (Account Identity{key} ) -> do
+      let txHash = hashOf payload
+      if verifySignature key (txHash <> previous) signed
+        then  pure $ TransactionRegistered $ toText $ txHash
+        else pure $ InvalidSignature
