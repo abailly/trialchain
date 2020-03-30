@@ -66,6 +66,9 @@ registerIdentity identity@Identity{..} = do
 listIdentities :: State Chain [Identity]
 listIdentities = gets (fmap identity . Map.elems . accounts)
 
+getIdentity :: Hash -> State Chain (Maybe Identity)
+getIdentity h = fmap identity . Map.lookup h <$> gets accounts
+
 findAccount :: Hash -> State Chain (Maybe Account)
 findAccount h = Map.lookup h <$> gets accounts
 

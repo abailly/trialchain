@@ -11,6 +11,7 @@ import Trialchain.Utils
 
 type API =
   "identities" :> ( ReqBody '[ JSON] Identity :> PostCreated '[ JSON] (Headers '[Header "Location" Text] NoContent)
+                    :<|> Capture "identityHash" Hash :> Get '[ JSON] Identity
                     :<|> Get '[ JSON] [Identity]
                   )
   :<|> "transactions" :>  ( ReqBody '[ JSON] Transaction :> PostCreated '[ JSON] (Headers '[Header "Location" Text] NoContent)
@@ -25,7 +26,7 @@ api = Proxy
 trialchainApp :: ChainState -> Application
 trialchainApp state = serve api handlers
   where
-    handlers = (registerIdentityH :<|> listIdentitiesH)
+    handlers = (registerIdentityH :<|> getIdentityH :<|> listIdentitiesH)
                :<|> (postTransactionH :<|> getTransactionH :<|> listTransactionsH)
                :<|> listAccountsH
 
@@ -35,6 +36,12 @@ trialchainApp state = serve api handlers
         IdentityRegistered h -> pure $ addHeader ("/identities" </> h) NoContent
         DuplicateIdentity -> throwError err409
         _ -> throwError err500
+
+    getIdentityH h = do
+      maybeIdent <- withState state $ getIdentity h
+      case maybeIdent of
+        Nothing -> throwError err404
+        Just ident -> pure ident
 
     listIdentitiesH = withState state listIdentities
 
