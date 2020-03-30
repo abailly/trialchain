@@ -10,6 +10,7 @@ import Control.Concurrent.STM
 import Control.Monad.State
 import Control.Monad.Trans (MonadIO(..))
 import qualified Data.Map as Map
+import Data.Maybe (isJust)
 import Data.Text (Text)
 import Trialchain.Identity
 import Trialchain.Transaction
@@ -29,6 +30,7 @@ data Event = IdentityRegistered { link :: Text }
            | TransactionUnsigned
            | InvalidSignature
            | UnknownIdentity { idenHash :: Hash }
+           | InvalidPreviousTransaction { txHash :: Hash }
 
 type ChainState = TVar Chain
 
@@ -67,9 +69,8 @@ findAccount h = Map.lookup h <$> gets accounts
 -- This function checks the transaction is valid w.r.t. to current state of the ledger
 registerTransaction :: Transaction -> State Chain Event
 registerTransaction Transaction{signed = NotSigned }  = pure TransactionUnsigned
-registerTransaction tx@Transaction{payload}
-  | from payload == baseTransactionHash =
-    gets serverPublicKey >>= flip validateTransactionFrom tx
+registerTransaction tx | isSeedTransaction tx =
+  gets serverPublicKey >>= flip validateTransactionFrom tx
 registerTransaction tx@Transaction{payload} = do
   account <- findAccount (from payload)
   case account of
@@ -80,13 +81,19 @@ validateTransactionFrom ::
   PublicKey -> Transaction -> State Chain Event
 validateTransactionFrom key tx@Transaction{payload, previous, signed} = do
   let txHash = hashOf payload
+  hasPrevious <- transactionExists previous
   if verifySignature key (txHash <> previous) signed
-    then insertTx txHash >> pure (TransactionRegistered $ toText $ txHash)
+    then if hasPrevious
+         then insertTx txHash >> pure (TransactionRegistered $ toText $ txHash)
+         else pure $ InvalidPreviousTransaction previous
     else pure $ InvalidSignature
   where
     insertTx h = modify' $
                  \ chain -> chain { transactions =  Map.insert h tx (transactions chain) }
 
+transactionExists :: Hash -> State Chain Bool
+transactionExists h | h == baseTransactionHash = pure True
+                    | otherwise = isJust <$> getTransaction h
 
 getTransaction :: Hash -> State Chain (Maybe Transaction)
 getTransaction h = Map.lookup h <$> gets transactions

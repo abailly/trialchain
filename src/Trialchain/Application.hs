@@ -37,9 +37,10 @@ trialchainApp state = serve api handlers
       result <- withState state (registerTransaction tx)
       case result of
         TransactionRegistered h -> pure $ addHeader ("/identities" </> h) NoContent
-        TransactionUnsigned -> throwError err400
-        InvalidSignature -> throwError err400
-        UnknownIdentity _ -> throwError err400
+        TransactionUnsigned -> throwError $ err400 { errBody = "Transaction unsigned" }
+        InvalidSignature -> throwError $ err400 { errBody = "Invalid Signature" }
+        UnknownIdentity _ -> throwError $ err400 { errBody = "Uknown identity" }
+        InvalidPreviousTransaction _ -> throwError $ err400 { errBody = "Invalid previous transaction" }
         _ -> throwError err500
 
     getTransactionH h = do

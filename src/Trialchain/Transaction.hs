@@ -65,6 +65,9 @@ seedTransaction priv pub h =
                      , signed = NotSigned
                      }
 
+isSeedTransaction :: Transaction -> Bool
+isSeedTransaction Transaction{payload} = from payload == baseTransactionHash
+
 -- | The root transaction's hash
 baseTransactionHash :: Hash
 baseTransactionHash =

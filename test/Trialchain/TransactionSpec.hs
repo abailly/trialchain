@@ -34,6 +34,14 @@ spec =
     it "on POST /transactions return '400' given transaction signed by unknown issuer" $ do
       postJSON "/transactions" aValidTransaction `shouldRespondWith` 400
 
+    it "on POST /transactions return '400' given previous transaction does not exist" $ do
+      let (pub, priv) = aSecretKey
+          wrongPreviousTx = signTransaction priv pub (aValidTransaction { previous = (hashOf @Text "foo") })
+      register anIdentity
+
+      postJSON "/transactions" wrongPreviousTx `shouldRespondWith`
+        ResponseMatcher 400 [] (W.bodyEquals "Invalid previous transaction")
+
     it "on GET /transactions/<tx hash> return 200 given tx has been posted" $ do
       register anIdentity
       void $ postJSON "/transactions" aValidTransaction
