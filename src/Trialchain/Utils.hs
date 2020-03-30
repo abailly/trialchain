@@ -21,6 +21,7 @@ import Data.String
 import Data.Text (Text, pack)
 import Data.Text.Encoding (decodeUtf8With, encodeUtf8)
 import Data.Text.Encoding.Error (lenientDecode)
+import Servant
 
 -- | A SHA1 hash of some value
 newtype Hash = Hash { hashValue :: Digest SHA1 }
@@ -30,7 +31,7 @@ instance IsString Hash where
   fromString = fromMaybe (error "invalid Hash string") . fromText . pack
 
 instance A.ToJSON Hash where
-  toJSON (Hash h) = A.String $ decodeUtf8' $ encode $ convert h
+  toJSON = A.String . toText
 
 instance A.FromJSON Hash where
   parseJSON = A.withText "Hash" fromText
@@ -38,6 +39,12 @@ instance A.FromJSON Hash where
 instance Semigroup Hash where
   Hash{hashValue} <> Hash{hashValue=hashValue'} =
     hash (convert hashValue <> convert hashValue')
+
+instance FromHttpApiData Hash where
+  parseUrlPiece t = maybe (Left $ "cannot convert "<> t <> " to Hash") Right $ fromText t
+
+instance ToHttpApiData Hash where
+  toUrlPiece  = toText
 
 fromText ::
   MonadFail m => Text -> m Hash
@@ -48,7 +55,7 @@ fromText s = case decode (encodeUtf8 s) of
                _ -> fail $ "cannot decode hash from JSON: " <> show s
 
 toText :: Hash -> Text
-toText = decodeUtf8' . convert . hashValue
+toText = decodeUtf8' . encode . convert . hashValue
 
 -- | A class for things that we can compute a `Hash` from
 class Hashable h where
