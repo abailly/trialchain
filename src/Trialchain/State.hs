@@ -13,13 +13,10 @@ import qualified Data.Map as Map
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import GHC.Natural
+import Trialchain.Account
 import Trialchain.Identity
 import Trialchain.Transaction
 import Trialchain.Utils
-
-data Account = Account { identity :: Identity
-                       , balance :: Natural
-                       }
 
 data Chain = Chain { serverPrivateKey :: PrivateKey
                    , serverPublicKey :: PublicKey
@@ -68,6 +65,9 @@ listIdentities = gets (fmap identity . Map.elems . accounts)
 
 findAccount :: Hash -> State Chain (Maybe Account)
 findAccount h = Map.lookup h <$> gets accounts
+
+listAccounts :: State Chain [Account]
+listAccounts = Map.elems <$> gets accounts
 
 getCurrentBalance :: Hash -> State Chain Natural
 getCurrentBalance = (maybe 0 balance <$>) . findAccount

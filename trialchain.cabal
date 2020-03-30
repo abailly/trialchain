@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 606de9a1e529688a2455c8bb273c80a109965846b388cbe71710462ae43c2d76
+-- hash: ee5289bd6850d57b5a1535b77263f0387dfb44c40740e4e71012d0f8149e1074
 
 name:           trialchain
 version:        0.1.0.0
@@ -27,6 +27,7 @@ source-repository head
 
 library
   exposed-modules:
+      Trialchain.Account
       Trialchain.Application
       Trialchain.Identity
       Trialchain.Server

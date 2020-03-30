@@ -8,6 +8,7 @@ import Test.Hspec as H
 import Test.Hspec.Wai
 import Test.Hspec.Wai.Matcher as W
 
+import Trialchain.Account
 import Trialchain.Builder
 import Trialchain.Transaction
 import Trialchain.Utils
@@ -87,3 +88,7 @@ spec =
 
         postJSON "/transactions" notEnoughBalanceTx `shouldRespondWith`
           ResponseMatcher 400 [] (W.bodyEquals "Not enough balance")
+
+      it "on GET /accounts returns list of accounts" $ do
+        register anIdentity
+        get "/accounts" `shouldRespondWith` ResponseMatcher 200 [] (W.bodyEquals $ A.encode [Account anIdentity 1000000000])

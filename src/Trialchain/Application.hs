@@ -2,6 +2,7 @@ module Trialchain.Application where
 
 import Data.Text (Text)
 import Servant
+import Trialchain.Account
 import Trialchain.Identity
 import Trialchain.State
 import Trialchain.Transaction
@@ -15,6 +16,7 @@ type API =
                             :<|> Capture "txHash" Hash :> Get '[JSON] Transaction
                             :<|> Get '[JSON] [Transaction]
                           )
+  :<|> "accounts" :> Get '[JSON] [Account]
 
 api :: Proxy API
 api = Proxy
@@ -22,7 +24,9 @@ api = Proxy
 trialchainApp :: ChainState -> Application
 trialchainApp state = serve api handlers
   where
-    handlers = (registerIdentityH :<|> listIdentitiesH) :<|> (postTransactionH :<|> getTransactionH :<|> listTransactionsH)
+    handlers = (registerIdentityH :<|> listIdentitiesH)
+               :<|> (postTransactionH :<|> getTransactionH :<|> listTransactionsH)
+               :<|> listAccountsH
 
     registerIdentityH identity = do
       result <- withState state (registerIdentity identity)
@@ -51,3 +55,5 @@ trialchainApp state = serve api handlers
         Just tx -> pure tx
 
     listTransactionsH = withState state $ listTransactions
+
+    listAccountsH = withState state $ listAccounts
