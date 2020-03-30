@@ -7,11 +7,13 @@ transaction are broadcasted
 module Trialchain.State where
 
 import Control.Concurrent.STM
+import Control.Monad.Except
 import Control.Monad.State
 import Control.Monad.Trans (MonadIO(..))
+import Data.Aeson (ToJSON)
 import qualified Data.Map as Map
-import Data.Maybe (isJust)
 import Data.Text (Text)
+import GHC.Generics (Generic)
 import GHC.Natural
 import Trialchain.Account
 import Trialchain.Identity
@@ -32,6 +34,7 @@ data Event = IdentityRegistered { link :: Text }
            | UnknownIdentity { idenHash :: Hash }
            | InvalidPreviousTransaction { txHash :: Hash }
            | NotEnoughBalance
+  deriving (Eq, Show, Generic, ToJSON)
 
 type ChainState = TVar Chain
 
@@ -72,56 +75,82 @@ listAccounts = Map.elems <$> gets accounts
 getCurrentBalance :: Hash -> State Chain Natural
 getCurrentBalance = (maybe 0 balance <$>) . findAccount
 
-hasEnoughBalance :: Hash -> Natural -> State Chain Bool
-hasEnoughBalance h amount
-  | h == baseTransactionHash = pure True
-  | otherwise = (>= amount) <$> getCurrentBalance h
+checkAccountHasEnoughBalance ::
+  Hash -> Natural -> ExceptT Event (State Chain) ()
+checkAccountHasEnoughBalance h amount
+  | h == baseTransactionHash = pure ()
+  | otherwise = do
+      bal <- lift (getCurrentBalance h)
+      if bal >= amount
+        then pure ()
+        else throwError NotEnoughBalance
 
 updateBalances :: Payload -> State Chain ()
 updateBalances Payload{..} = do
-  modify' (updateBalance to (\ acc -> Just $ acc { balance =  balance acc + amount }))
-  modify' (updateBalance from (\ acc -> Just $ acc { balance = balance acc - amount}))
+  modify' (updateBalance to (+))
+  modify' (updateBalance from (-))
   where
-    updateBalance h op chain = chain { accounts = Map.update op h (accounts chain) }
-
+    updateBalance h op chain = chain { accounts = Map.update (updateBal op) h (accounts chain) }
+    updateBal op acc = Just $ acc { balance = balance acc `op` amount }
 
 -- | Try to register a `Transaction`
 -- This function checks the transaction is valid w.r.t. to current state of the ledger
-registerTransaction :: Transaction -> State Chain Event
-registerTransaction Transaction{signed = NotSigned }  = pure TransactionUnsigned
-registerTransaction tx | isSeedTransaction tx =
-  gets serverPublicKey >>= flip validateTransactionFrom tx
-registerTransaction tx@Transaction{payload} = do
-  fromAccount <- findAccount (from payload)
-  toAccount <- findAccount (to payload)
-  case (fromAccount, toAccount) of
-    (Just (Account Identity{key} _), Just _) -> validateTransactionFrom key tx
-    (Nothing, _) -> pure $ UnknownIdentity (from payload)
-    (Just _, Nothing) -> pure $ UnknownIdentity (to payload)
+-- As we don't distinguish errors from `Event`s we return this odd `Either Event Event`
+-- type, with the usual semantics that errors are on the `Left` and successes on the
+-- `Right`.
+registerTransaction :: Transaction -> State Chain (Either Event Event)
+registerTransaction Transaction{signed = NotSigned } =
+  pure $ Left TransactionUnsigned
 
+registerTransaction tx | isSeedTransaction tx =
+  gets serverPublicKey >>= runExceptT . flip validateTransactionFrom tx
+
+registerTransaction tx@Transaction{payload} = runExceptT $ do
+  Account{identity = Identity{key}} <- checkAccountExists (from payload)
+  void $ checkAccountExists (to payload)
+  validateTransactionFrom key tx
+
+-- | Internal validation logic for new `Transaction`s.
+--
+-- We wrap this computation in an  `ExceptT` monad transformer in order to simplify
+-- writing validation logic as a sequence of steps: Each step in the sequence can
+-- fail in different ways and we want to shortcut computation when it fails.
 validateTransactionFrom ::
-  PublicKey -> Transaction -> State Chain Event
+  PublicKey -> Transaction -> ExceptT Event (State Chain) Event
 validateTransactionFrom key tx@Transaction{payload, previous, signed} = do
   let txHash = hashOf payload
-  hasPrevious <- transactionExists previous
-  enoughBalance <- hasEnoughBalance (from payload) (amount payload)
-  if verifySignature key (txHash <> previous) signed
-    then if hasPrevious
-         then if enoughBalance
-              then insertTx txHash >> updateBalances payload >> pure (TransactionRegistered $ toText $ txHash)
-              else pure $ NotEnoughBalance
-         else pure $ InvalidPreviousTransaction previous
-    else pure $ InvalidSignature
+  checkTransactionExists previous
+  checkAccountHasEnoughBalance (from payload) (amount payload)
+  checkSignature key (txHash <> previous) signed
+  lift $ insertTx txHash >> updateBalances payload >> pure (TransactionRegistered $ toText $ txHash)
   where
     insertTx h = modify' $
                  \ chain -> chain { transactions =  Map.insert h tx (transactions chain) }
 
-transactionExists :: Hash -> State Chain Bool
-transactionExists h | h == baseTransactionHash = pure True
-                    | otherwise = isJust <$> getTransaction h
+checkAccountExists ::
+  Hash -> ExceptT Event (State Chain) Account
+checkAccountExists h = do
+  account <- lift $ findAccount h
+  maybe (throwError $ UnknownIdentity h) pure account
 
-getTransaction :: Hash -> State Chain (Maybe Transaction)
+checkSignature ::
+  PublicKey -> Hash -> Signature -> ExceptT Event (State Chain) ()
+checkSignature key h signed =
+  if verifySignature key h signed
+  then pure ()
+  else throwError InvalidSignature
+
+checkTransactionExists ::
+  Hash -> ExceptT Event (State Chain) ()
+checkTransactionExists h | h == baseTransactionHash = pure ()
+                    | otherwise = lift (getTransaction h) >>=
+                                  maybe (throwError $ InvalidPreviousTransaction h) (const $ pure ())
+
+
+getTransaction ::
+  Hash -> State Chain (Maybe Transaction)
 getTransaction h = Map.lookup h <$> gets transactions
 
-listTransactions :: State Chain [Transaction]
+listTransactions ::
+  State Chain [Transaction]
 listTransactions = Map.elems <$> gets transactions

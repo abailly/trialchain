@@ -50,7 +50,7 @@ spec =
       register bob
 
       postJSON "/transactions" wrongPreviousTx `shouldRespondWith`
-        ResponseMatcher 400 [] (W.bodyEquals "Invalid previous transaction")
+        ResponseMatcher 400 [] (W.bodyEquals "{\"tag\":\"InvalidPreviousTransaction\",\"txHash\":\"0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33\"}")
 
     it "on GET /transactions/<tx hash> return 200 given tx has been posted" $ do
       register anIdentity
@@ -87,7 +87,16 @@ spec =
                                              }
 
         postJSON "/transactions" notEnoughBalanceTx `shouldRespondWith`
-          ResponseMatcher 400 [] (W.bodyEquals "Not enough balance")
+          ResponseMatcher 400 [] (W.bodyEquals "{\"tag\":\"NotEnoughBalance\"}")
+
+      it "on POST /transactions update accounts' balances" $ do
+        register anIdentity
+        register bob
+
+        void $ postJSON "/transactions" aValidTransaction
+
+        get "/accounts" `shouldRespondWith`
+          ResponseMatcher 200 [] (W.bodyEquals $ A.encode [Account bob 1000000001, Account anIdentity 999999999])
 
       it "on GET /accounts returns list of accounts" $ do
         register anIdentity

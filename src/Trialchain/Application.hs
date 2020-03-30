@@ -1,5 +1,6 @@
 module Trialchain.Application where
 
+import Data.Aeson (encode)
 import Data.Text (Text)
 import Servant
 import Trialchain.Account
@@ -40,12 +41,8 @@ trialchainApp state = serve api handlers
     postTransactionH tx = do
       result <- withState state (registerTransaction tx)
       case result of
-        TransactionRegistered h -> pure $ addHeader ("/identities" </> h) NoContent
-        TransactionUnsigned -> throwError $ err400 { errBody = "Transaction unsigned" }
-        InvalidSignature -> throwError $ err400 { errBody = "Invalid Signature" }
-        UnknownIdentity _ -> throwError $ err400 { errBody = "Uknown identity" }
-        InvalidPreviousTransaction _ -> throwError $ err400 { errBody = "Invalid previous transaction" }
-        NotEnoughBalance -> throwError $ err400 { errBody = "Not enough balance" }
+        Right (TransactionRegistered h) -> pure $ addHeader ("/identities" </> h) NoContent
+        Left err -> throwError $ err400 { errBody = encode err }
         _ -> throwError err500
 
     getTransactionH h = do
