@@ -70,3 +70,20 @@ spec =
         register anIdentity
         get "/transactions" `shouldRespondWith`
           ResponseMatcher 200 [] (W.bodyEquals $ A.encode [seedTransaction priv pub $ hashOf @Text "alice"])
+
+      it "on POST /transactions returns '400' given amount is greater than identity's balance" $ do
+        register anIdentity
+        register bob
+        let Transaction{payload} = seedTransaction priv pub $ hashOf @Text "alice"
+            (pub, priv) = aSecretKey
+            notEnoughBalanceTx = signTransaction priv pub
+                                 Transaction { payload = Payload { from = hashOf @Text "alice"
+                                                                 , to = hashOf @Text "bob"
+                                                                 , amount = 1000000001
+                                                                 }
+                                             , previous = hashOf payload
+                                             , signed = NotSigned
+                                             }
+
+        postJSON "/transactions" notEnoughBalanceTx `shouldRespondWith`
+          ResponseMatcher 400 [] (W.bodyEquals "Not enough balance")

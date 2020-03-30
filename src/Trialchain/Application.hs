@@ -41,6 +41,7 @@ trialchainApp state = serve api handlers
         InvalidSignature -> throwError $ err400 { errBody = "Invalid Signature" }
         UnknownIdentity _ -> throwError $ err400 { errBody = "Uknown identity" }
         InvalidPreviousTransaction _ -> throwError $ err400 { errBody = "Invalid previous transaction" }
+        NotEnoughBalance -> throwError $ err400 { errBody = "Not enough balance" }
         _ -> throwError err500
 
     getTransactionH h = do

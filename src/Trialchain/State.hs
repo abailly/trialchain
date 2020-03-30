@@ -12,11 +12,14 @@ import Control.Monad.Trans (MonadIO(..))
 import qualified Data.Map as Map
 import Data.Maybe (isJust)
 import Data.Text (Text)
+import GHC.Natural
 import Trialchain.Identity
 import Trialchain.Transaction
 import Trialchain.Utils
 
-data Account = Account { identity :: Identity }
+data Account = Account { identity :: Identity
+                       , balance :: Natural
+                       }
 
 data Chain = Chain { serverPrivateKey :: PrivateKey
                    , serverPublicKey :: PublicKey
@@ -31,6 +34,7 @@ data Event = IdentityRegistered { link :: Text }
            | InvalidSignature
            | UnknownIdentity { idenHash :: Hash }
            | InvalidPreviousTransaction { txHash :: Hash }
+           | NotEnoughBalance
 
 type ChainState = TVar Chain
 
@@ -53,7 +57,7 @@ registerIdentity identity@Identity{..} = do
   chain@Chain{..} <- get
   case Map.lookup identityId accounts of
     Nothing -> do
-      put (chain { accounts = Map.insert identityId (Account identity) accounts })
+      put (chain { accounts = Map.insert identityId (Account identity 0) accounts })
       void $ registerTransaction (seedTransaction serverPrivateKey serverPublicKey identityId)
       pure (IdentityRegistered $ identityHash identity)
     Just _ -> pure DuplicateIdentity
@@ -65,6 +69,22 @@ listIdentities = gets (fmap identity . Map.elems . accounts)
 findAccount :: Hash -> State Chain (Maybe Account)
 findAccount h = Map.lookup h <$> gets accounts
 
+getCurrentBalance :: Hash -> State Chain Natural
+getCurrentBalance = (maybe 0 balance <$>) . findAccount
+
+hasEnoughBalance :: Hash -> Natural -> State Chain Bool
+hasEnoughBalance h amount
+  | h == baseTransactionHash = pure True
+  | otherwise = (>= amount) <$> getCurrentBalance h
+
+updateBalances :: Payload -> State Chain ()
+updateBalances Payload{..} = do
+  modify' (updateBalance to (\ acc -> Just $ acc { balance =  balance acc + amount }))
+  modify' (updateBalance from (\ acc -> Just $ acc { balance = balance acc - amount}))
+  where
+    updateBalance h op chain = chain { accounts = Map.update op h (accounts chain) }
+
+
 -- | Try to register a `Transaction`
 -- This function checks the transaction is valid w.r.t. to current state of the ledger
 registerTransaction :: Transaction -> State Chain Event
@@ -75,7 +95,7 @@ registerTransaction tx@Transaction{payload} = do
   fromAccount <- findAccount (from payload)
   toAccount <- findAccount (to payload)
   case (fromAccount, toAccount) of
-    (Just (Account Identity{key}), Just _) -> validateTransactionFrom key tx
+    (Just (Account Identity{key} _), Just _) -> validateTransactionFrom key tx
     (Nothing, _) -> pure $ UnknownIdentity (from payload)
     (Just _, Nothing) -> pure $ UnknownIdentity (to payload)
 
@@ -84,9 +104,12 @@ validateTransactionFrom ::
 validateTransactionFrom key tx@Transaction{payload, previous, signed} = do
   let txHash = hashOf payload
   hasPrevious <- transactionExists previous
+  enoughBalance <- hasEnoughBalance (from payload) (amount payload)
   if verifySignature key (txHash <> previous) signed
     then if hasPrevious
-         then insertTx txHash >> pure (TransactionRegistered $ toText $ txHash)
+         then if enoughBalance
+              then insertTx txHash >> updateBalances payload >> pure (TransactionRegistered $ toText $ txHash)
+              else pure $ NotEnoughBalance
          else pure $ InvalidPreviousTransaction previous
     else pure $ InvalidSignature
   where

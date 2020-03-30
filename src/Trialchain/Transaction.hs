@@ -2,12 +2,13 @@ module Trialchain.Transaction where
 
 import Data.Aeson as A
 import Data.ByteString.Lazy (toStrict)
+import GHC.Natural
 import Trialchain.Utils
 
 data Payload =
   Payload { from :: Hash
           , to :: Hash
-          , amount :: Integer
+          , amount :: Natural
           }
   deriving (Eq, Show)
 
