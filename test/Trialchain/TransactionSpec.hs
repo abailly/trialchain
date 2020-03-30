@@ -1,10 +1,14 @@
 module Trialchain.TransactionSpec where
 
+import Data.Functor (void)
+import Data.Text.Encoding (encodeUtf8)
 import Test.Hspec as H
 import Test.Hspec.Wai
 
 import Trialchain.Builder
 import Trialchain.Transaction
+import Trialchain.Utils
+
 
 spec :: Spec
 spec =
@@ -26,3 +30,10 @@ spec =
 
     it "on POST /transactions return '400' given transaction signed by unknown issuer" $ do
       postJSON "/transactions" aValidTransaction `shouldRespondWith` 400
+
+    it "on GET /transactions/<tx hash> return 200 given tx has been posted" $ do
+      register anIdentity
+      void $ postJSON "/transactions" aValidTransaction
+      let uri = encodeUtf8 $ "/transactions/" <> toText (hashOf $ payload aValidTransaction)
+
+      get uri `shouldRespondWith` 200

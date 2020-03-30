@@ -17,7 +17,9 @@ import Trialchain.Utils
 
 data Account = Account { identity :: Identity }
 
-data Chain = Chain { accounts :: Map.Map Hash Account }
+data Chain = Chain { accounts :: Map.Map Hash Account
+                   , transactions :: Map.Map Hash Transaction
+                   }
 
 data Event = IdentityRegistered { link :: Text }
            | DuplicateIdentity
@@ -34,7 +36,7 @@ withState st =
   liftIO . atomically . stateTVar st . runState
 
 initialChain :: Chain
-initialChain = Chain mempty
+initialChain = Chain mempty mempty
 
 initialState :: IO ChainState
 initialState = newTVarIO initialChain
@@ -61,12 +63,18 @@ findAccount h = Map.lookup h <$> gets accounts
 -- This function checks the transaction is valid w.r.t. to current state of the ledger
 registerTransaction :: Transaction -> State Chain Event
 registerTransaction Transaction{signed = NotSigned }  = pure TransactionUnsigned
-registerTransaction Transaction{payload, previous, signed} = do
+registerTransaction tx@Transaction{payload, previous, signed} = do
   account <- findAccount (from payload)
   case account of
     Nothing -> pure $ UnknownIdentity (from payload)
     Just (Account Identity{key} ) -> do
       let txHash = hashOf payload
       if verifySignature key (txHash <> previous) signed
-        then  pure $ TransactionRegistered $ toText $ txHash
+        then insertTx txHash >> pure (TransactionRegistered $ toText $ txHash)
         else pure $ InvalidSignature
+  where
+    insertTx h = modify' $
+                 \ chain -> chain { transactions =  Map.insert h tx (transactions chain) }
+
+getTransaction :: Hash -> State Chain (Maybe Transaction)
+getTransaction h = Map.lookup h <$> gets transactions

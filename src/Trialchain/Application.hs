@@ -11,7 +11,9 @@ type API =
   "identities" :> ( ReqBody '[ JSON] Identity :> PostCreated '[ JSON] (Headers '[Header "Location" Text] NoContent)
                     :<|> Get '[ JSON] [Identity]
                   )
-  :<|> "transactions" :>  ReqBody '[ JSON] Transaction :> PostCreated '[ JSON] (Headers '[Header "Location" Text] NoContent)
+  :<|> "transactions" :>  ( ReqBody '[ JSON] Transaction :> PostCreated '[ JSON] (Headers '[Header "Location" Text] NoContent)
+                            :<|> Capture "txHash" Hash :> Get '[JSON] Transaction
+                          )
 
 api :: Proxy API
 api = Proxy
@@ -19,7 +21,7 @@ api = Proxy
 trialchainApp :: ChainState -> Application
 trialchainApp state = serve api handlers
   where
-    handlers = (registerIdentityH :<|> listIdentitiesH) :<|> postTransactionH
+    handlers = (registerIdentityH :<|> listIdentitiesH) :<|> (postTransactionH :<|> getTransactionH)
 
     registerIdentityH identity = do
       result <- withState state (registerIdentity identity)
@@ -38,3 +40,9 @@ trialchainApp state = serve api handlers
         InvalidSignature -> throwError err400
         UnknownIdentity _ -> throwError err400
         _ -> throwError err500
+
+    getTransactionH h = do
+      maybeTx <- withState state $ getTransaction h
+      case maybeTx of
+        Nothing -> undefined
+        Just tx -> pure tx
