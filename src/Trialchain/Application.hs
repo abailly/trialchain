@@ -35,4 +35,5 @@ trialchainApp state = serve api handlers
       case result of
         TransactionRegistered h -> pure $ addHeader ("/identities" </> h) NoContent
         TransactionUnsigned -> throwError err400
+        InvalidSignature -> throwError err400
         _ -> throwError err500

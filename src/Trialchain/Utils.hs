@@ -3,7 +3,7 @@ module Trialchain.Utils
   , PublicKey(..), PrivateKey(..), Signature(..)
   , Hashable(..)
   , decodeUtf8', (</>), hash
-  , generateKeyPair, signWith
+  , generateKeyPair, signWith, verifySignature
   ) where
 
 import Control.Monad.Fail (MonadFail)
@@ -114,6 +114,12 @@ signWith ::
   PrivateKey -> PublicKey -> Hash -> Signature
 signWith PrivateKey{privateKey} PublicKey{publicKey} Hash{hashValue} =
   Signature $ Ed25519.sign privateKey publicKey hashValue
+
+verifySignature ::
+  PublicKey -> Hash -> Signature -> Bool
+verifySignature PublicKey{publicKey} Hash{hashValue} Signature{signature} =
+  Ed25519.verify publicKey hashValue signature
+verifySignature _ _ NotSigned = False
 
 -- | Decode a `ByteString` into a `Text` assuming UTF-8 encoding.
 -- If unknown bytes sequence are encountered they are replaced by a default

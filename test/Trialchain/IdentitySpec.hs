@@ -1,7 +1,6 @@
 module Trialchain.IdentitySpec where
 
 import qualified Data.Aeson as A
-import Data.Functor (void)
 import Data.Text.Encoding (encodeUtf8)
 import Test.Hspec as H
 import Test.Hspec.Wai as W
@@ -32,7 +31,3 @@ spec =
     it "on GET /identities returns list of identities" $ do
       register anIdentity
       get "/identities" `shouldRespondWith` ResponseMatcher 200 [] (W.bodyEquals $ A.encode [anIdentity])
-
-
-register :: Identity -> WaiSession ()
-register = void <$> postJSON "/identities"

@@ -3,6 +3,7 @@ module Trialchain.Builder where
 
 import qualified Data.Aeson as A
 import Data.ByteString (ByteString)
+import Data.Functor (void)
 import Data.Text (Text)
 import Network.Wai (Application)
 import Network.Wai.Test (SResponse)
@@ -53,3 +54,6 @@ mkTrialchainApp = initialState >>= pure . trialchainApp
 
 postJSON :: (A.ToJSON a) => ByteString -> a -> WaiSession SResponse
 postJSON path payload = request "POST" path [("Content-type", "application/json")] (A.encode payload)
+
+register :: Identity -> WaiSession ()
+register = void . postJSON "/identities"
