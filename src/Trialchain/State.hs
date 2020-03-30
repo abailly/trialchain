@@ -72,10 +72,12 @@ registerTransaction Transaction{signed = NotSigned }  = pure TransactionUnsigned
 registerTransaction tx | isSeedTransaction tx =
   gets serverPublicKey >>= flip validateTransactionFrom tx
 registerTransaction tx@Transaction{payload} = do
-  account <- findAccount (from payload)
-  case account of
-    Nothing -> pure $ UnknownIdentity (from payload)
-    Just (Account Identity{key} ) -> validateTransactionFrom key tx
+  fromAccount <- findAccount (from payload)
+  toAccount <- findAccount (to payload)
+  case (fromAccount, toAccount) of
+    (Just (Account Identity{key}), Just _) -> validateTransactionFrom key tx
+    (Nothing, _) -> pure $ UnknownIdentity (from payload)
+    (Just _, Nothing) -> pure $ UnknownIdentity (to payload)
 
 validateTransactionFrom ::
   PublicKey -> Transaction -> State Chain Event

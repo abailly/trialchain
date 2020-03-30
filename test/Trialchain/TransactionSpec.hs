@@ -20,30 +20,41 @@ spec =
 
     it "on POST /transactions return '201 Created' given Transaction is valid" $ do
       register anIdentity
+      register bob
       postJSON "/transactions" aValidTransaction `shouldRespondWith` 201
 
     it "on POST /transactions return '400' given transaction is unsigned" $ do
       register anIdentity
+      register bob
       postJSON "/transactions" (unsigned aValidTransaction) `shouldRespondWith` 400
 
     it "on POST /transactions return '400' given transaction is not signed by issuer" $ do
       let (pub, priv) = bobsKeys
       register anIdentity
+      register bob
       postJSON "/transactions" (signTransaction priv pub aValidTransaction) `shouldRespondWith` 400
 
     it "on POST /transactions return '400' given transaction signed by unknown issuer" $ do
+      register bob
+      postJSON "/transactions" aValidTransaction `shouldRespondWith` 400
+
+    it "on POST /transactions return '400' given transaction is sent to unknown entity" $ do
+      register anIdentity
       postJSON "/transactions" aValidTransaction `shouldRespondWith` 400
 
     it "on POST /transactions return '400' given previous transaction does not exist" $ do
       let (pub, priv) = aSecretKey
           wrongPreviousTx = signTransaction priv pub (aValidTransaction { previous = (hashOf @Text "foo") })
       register anIdentity
+      register bob
 
       postJSON "/transactions" wrongPreviousTx `shouldRespondWith`
         ResponseMatcher 400 [] (W.bodyEquals "Invalid previous transaction")
 
     it "on GET /transactions/<tx hash> return 200 given tx has been posted" $ do
       register anIdentity
+      register bob
+
       void $ postJSON "/transactions" aValidTransaction
       let uri = encodeUtf8 $ "/transactions/" <> toText (hashOf $ payload aValidTransaction)
 
