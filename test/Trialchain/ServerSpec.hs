@@ -13,7 +13,9 @@ import Trialchain.Identity
 import Trialchain.Server
 
 startServer :: IO AppServer
-startServer = startAppServer 0
+startServer = startAppServer priv pub 0
+  where
+    (pub, priv) = serverKeys
 
 trialchainServer :: (AppServer -> IO c) -> IO c
 trialchainServer = bracket startServer stopServer

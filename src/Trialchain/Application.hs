@@ -13,6 +13,7 @@ type API =
                   )
   :<|> "transactions" :>  ( ReqBody '[ JSON] Transaction :> PostCreated '[ JSON] (Headers '[Header "Location" Text] NoContent)
                             :<|> Capture "txHash" Hash :> Get '[JSON] Transaction
+                            :<|> Get '[JSON] [Transaction]
                           )
 
 api :: Proxy API
@@ -21,7 +22,7 @@ api = Proxy
 trialchainApp :: ChainState -> Application
 trialchainApp state = serve api handlers
   where
-    handlers = (registerIdentityH :<|> listIdentitiesH) :<|> (postTransactionH :<|> getTransactionH)
+    handlers = (registerIdentityH :<|> listIdentitiesH) :<|> (postTransactionH :<|> getTransactionH :<|> listTransactionsH)
 
     registerIdentityH identity = do
       result <- withState state (registerIdentity identity)
@@ -46,3 +47,5 @@ trialchainApp state = serve api handlers
       case maybeTx of
         Nothing -> throwError err404
         Just tx -> pure tx
+
+    listTransactionsH = withState state $ listTransactions

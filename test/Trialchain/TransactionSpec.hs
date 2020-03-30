@@ -1,9 +1,12 @@
 module Trialchain.TransactionSpec where
 
+import qualified Data.Aeson as A
 import Data.Functor (void)
+import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
 import Test.Hspec as H
 import Test.Hspec.Wai
+import Test.Hspec.Wai.Matcher as W
 
 import Trialchain.Builder
 import Trialchain.Transaction
@@ -40,3 +43,11 @@ spec =
 
     it "on GET /transactions/<tx hash> return 404 given tx hash is not known" $ do
       get "/transactions/0123456789012345678901234567890123456789" `shouldRespondWith` 404
+
+    describe "Accounts Balances" $ do
+
+      it "inserts a transaction for 1000000000 Trials when registering identity" $ do
+        let (pub, priv) = serverKeys
+        register anIdentity
+        get "/transactions" `shouldRespondWith`
+          ResponseMatcher 200 [] (W.bodyEquals $ A.encode [seedTransaction priv pub $ hashOf @Text "alice"])

@@ -17,7 +17,9 @@ import Trialchain.Utils
 
 data Account = Account { identity :: Identity }
 
-data Chain = Chain { accounts :: Map.Map Hash Account
+data Chain = Chain { serverPrivateKey :: PrivateKey
+                   , serverPublicKey :: PublicKey
+                   , accounts :: Map.Map Hash Account
                    , transactions :: Map.Map Hash Transaction
                    }
 
@@ -35,11 +37,11 @@ withState ::
 withState st =
   liftIO . atomically . stateTVar st . runState
 
-initialChain :: Chain
-initialChain = Chain mempty mempty
+initialChain :: PrivateKey -> PublicKey -> Chain
+initialChain priv pub = Chain priv pub mempty mempty
 
-initialState :: IO ChainState
-initialState = newTVarIO initialChain
+initialState :: PrivateKey -> PublicKey -> IO ChainState
+initialState priv pub = newTVarIO $ initialChain priv pub
 
 -- * Pure Chain Domain functions
 
@@ -48,8 +50,10 @@ registerIdentity :: Identity -> State Chain Event
 registerIdentity identity@Identity{..} = do
   chain@Chain{..} <- get
   case Map.lookup identityId accounts of
-    Nothing -> put (chain { accounts = Map.insert identityId (Account identity) accounts }) >>
-               pure (IdentityRegistered $ identityHash identity)
+    Nothing -> do
+      put (chain { accounts = Map.insert identityId (Account identity) accounts })
+      void $ registerTransaction (seedTransaction serverPrivateKey serverPublicKey identityId)
+      pure (IdentityRegistered $ identityHash identity)
     Just _ -> pure DuplicateIdentity
 
 -- | List all identities known by this `Chain` server
@@ -63,18 +67,29 @@ findAccount h = Map.lookup h <$> gets accounts
 -- This function checks the transaction is valid w.r.t. to current state of the ledger
 registerTransaction :: Transaction -> State Chain Event
 registerTransaction Transaction{signed = NotSigned }  = pure TransactionUnsigned
-registerTransaction tx@Transaction{payload, previous, signed} = do
+registerTransaction tx@Transaction{payload}
+  | from payload == baseTransactionHash =
+    gets serverPublicKey >>= flip validateTransactionFrom tx
+registerTransaction tx@Transaction{payload} = do
   account <- findAccount (from payload)
   case account of
     Nothing -> pure $ UnknownIdentity (from payload)
-    Just (Account Identity{key} ) -> do
-      let txHash = hashOf payload
-      if verifySignature key (txHash <> previous) signed
-        then insertTx txHash >> pure (TransactionRegistered $ toText $ txHash)
-        else pure $ InvalidSignature
+    Just (Account Identity{key} ) -> validateTransactionFrom key tx
+
+validateTransactionFrom ::
+  PublicKey -> Transaction -> State Chain Event
+validateTransactionFrom key tx@Transaction{payload, previous, signed} = do
+  let txHash = hashOf payload
+  if verifySignature key (txHash <> previous) signed
+    then insertTx txHash >> pure (TransactionRegistered $ toText $ txHash)
+    else pure $ InvalidSignature
   where
     insertTx h = modify' $
                  \ chain -> chain { transactions =  Map.insert h tx (transactions chain) }
 
+
 getTransaction :: Hash -> State Chain (Maybe Transaction)
 getTransaction h = Map.lookup h <$> gets transactions
+
+listTransactions :: State Chain [Transaction]
+listTransactions = Map.elems <$> gets transactions

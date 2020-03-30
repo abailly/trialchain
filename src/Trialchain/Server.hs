@@ -8,6 +8,7 @@ import Network.Wai.Middleware.RequestLogger
 import Network.Wai.Middleware.RequestLogger.JSON
 import Trialchain.Application
 import Trialchain.State
+import Trialchain.Utils
 
 data AppServer = AppServer
     { serverThread :: Maybe (Async ())
@@ -15,10 +16,10 @@ data AppServer = AppServer
     , serverState :: TVar Chain
     }
 
-startAppServer :: Port -> IO AppServer
-startAppServer listenPort = do
+startAppServer :: PrivateKey -> PublicKey -> Port -> IO AppServer
+startAppServer priv pub listenPort = do
   logger             <- doLog
-  state              <- initialState
+  state              <- initialState priv pub
   (realPort, thread) <- server logger state
   pure $ AppServer (Just thread) realPort state
     where

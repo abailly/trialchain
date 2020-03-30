@@ -49,6 +49,22 @@ signTransaction :: PrivateKey -> PublicKey -> Transaction -> Transaction
 signTransaction privateKey publicKey tx@Transaction{..} =
   tx { signed = signWith privateKey publicKey (hashOf payload <> previous) }
 
+-- | A "seed" `Transaction` that transfers 1_000_000_000 units to given account
+-- This function simulates initial injection of "money" into the chain which is
+-- usually done through mining or ICOs. It assumes the server is identified
+-- with trusted key pair that gives it the power to "make money".
+seedTransaction :: PrivateKey -> PublicKey -> Hash -> Transaction
+seedTransaction priv pub h =
+  signTransaction priv pub tx
+  where
+    tx = Transaction { payload = Payload { from = baseTransactionHash
+                                         , to = h
+                                         , amount = 1000000000
+                                         }
+                     , previous = baseTransactionHash
+                     , signed = NotSigned
+                     }
+
 -- | The root transaction's hash
 baseTransactionHash :: Hash
 baseTransactionHash =

@@ -49,8 +49,15 @@ aValidTransaction =
 unsigned :: Transaction -> Transaction
 unsigned tx = tx { signed = NotSigned }
 
+serverKeys :: (PublicKey, PrivateKey)
+serverKeys = unsafePerformIO generateKeyPair
+{-# NOINLINE serverKeys #-}
+
 mkTrialchainApp :: IO Application
-mkTrialchainApp = initialState >>= pure . trialchainApp
+mkTrialchainApp = initialState priv pub  >>= pure . trialchainApp
+  where
+    (pub, priv) = serverKeys
+
 
 postJSON :: (A.ToJSON a) => ByteString -> a -> WaiSession SResponse
 postJSON path payload = request "POST" path [("Content-type", "application/json")] (A.encode payload)
